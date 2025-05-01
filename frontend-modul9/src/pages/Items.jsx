@@ -3,6 +3,8 @@ import axios from 'axios';
 
 function Items() {
   const [items, setItems] = useState([]);
+  const [filteredItems, setFilteredItems] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [stores, setStores] = useState([]);
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
@@ -29,6 +31,7 @@ function Items() {
       
       if (itemsResponse.data && itemsResponse.data.success) {
         setItems(itemsResponse.data.payload || []);
+        setFilteredItems(itemsResponse.data.payload || []);
         
         // Animate items after loading
         setTimeout(() => {
@@ -37,6 +40,7 @@ function Items() {
       } else {
         setError(itemsResponse.data.message || 'Failed to fetch items.');
         setItems([]);
+        setFilteredItems([]);
       }
 
       // Fetch stores for the dropdown
@@ -55,6 +59,7 @@ function Items() {
       setError(err.response?.data?.message || 'An error occurred while fetching data.');
       setItems([]);
       setStores([]);
+      setFilteredItems([]);
     } finally {
       setIsLoading(false);
     }
@@ -70,6 +75,24 @@ function Items() {
       document.body.classList.remove('bg-items-theme');
     };
   }, []);
+
+  // Filter items when search term changes
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredItems(items);
+      return;
+    }
+    
+    const lowercasedSearch = searchTerm.toLowerCase();
+    const results = items.filter(item => 
+      item.name.toLowerCase().includes(lowercasedSearch) || 
+      String(item.price).includes(lowercasedSearch) ||
+      (item.store_name && item.store_name.toLowerCase().includes(lowercasedSearch)) ||
+      (item.store_location && item.store_location.toLowerCase().includes(lowercasedSearch))
+    );
+    
+    setFilteredItems(results);
+  }, [searchTerm, items]);
 
   // Handle add item
   const handleAddItem = async (e) => {
@@ -134,6 +157,11 @@ function Items() {
       setIsSubmitting(false);
       e.target.classList.remove('animate-pulse');
     }
+  };
+  
+  // Handle search change
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
   };
 
   return (
@@ -343,15 +371,45 @@ function Items() {
           </div>
         )}
 
+        {/* Search Bar */}
+        {!isAdding && !isLoading && items.length > 0 && (
+          <div className="mb-6">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={handleSearchChange}
+                placeholder="Search items by name, price, or store"
+                className="pl-10 pr-4 py-3 w-full rounded-lg border-gray-200 border focus:border-blue-500 focus:ring-blue-500 transition-colors duration-200 bg-white shadow-sm"
+              />
+              {searchTerm && (
+                <button 
+                  onClick={() => setSearchTerm('')}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Items List */} 
         {isLoading ? (
           <div className="flex flex-col justify-center items-center mt-20">
             <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
             <p className="text-blue-600 mt-4 font-medium">Loading items...</p>
           </div>
-        ) : items.length > 0 ? (
+        ) : filteredItems && filteredItems.length > 0 ? (
           <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 ${animateItems ? 'opacity-100' : 'opacity-0'} transition-opacity duration-700`}>
-            {items.map((item, index) => (
+            {filteredItems.map((item, index) => (
               <div 
                 key={item.id} 
                 className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 ease-in-out transform hover:-translate-y-1 flex flex-col"
@@ -389,6 +447,20 @@ function Items() {
                 </div>
               </div>
             ))}
+          </div>
+        ) : items.length > 0 ? (
+          <div className="text-center my-10 p-8 bg-white rounded-lg shadow-md">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-blue-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-lg text-gray-500 mb-3">No items match your search.</p>
+            <p className="text-gray-400">Try different keywords or clear the search.</p>
+            <button 
+              onClick={() => setSearchTerm('')}
+              className="mt-4 px-4 py-2 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200 transition-colors duration-300"
+            >
+              Clear Search
+            </button>
           </div>
         ) : (
           !error && (
