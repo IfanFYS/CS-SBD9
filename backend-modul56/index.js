@@ -9,9 +9,9 @@ const cors = require('cors');
 
 const app = express();
 
-// CORS configuration
+// CORS configuration - update to allow all origins for testing
 const corsOptions = { 
-  origin: ['http://localhost:5173', 'https://os.netlabdte.com', 'https://sbd-project.vercel.app', 'https://*.vercel.app'],
+  origin: '*', // Allow all origins temporarily for debugging
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -24,6 +24,21 @@ app.get('/', (req, res) => {
     success: true,
     message: 'SBD Backend API is running',
     timestamp: new Date().toISOString()
+  });
+});
+
+// Debug route to check environment
+app.get('/debug', (req, res) => {
+  res.status(200).json({
+    message: 'Debug information',
+    node_env: process.env.NODE_ENV,
+    database_connection: !!process.env.DATABASE_URL || !!process.env.PG_CONNECTION_STRING,
+    routes: {
+      store: '/store',
+      user: '/user',
+      item: '/item',
+      transaction: '/transaction'
+    }
   });
 });
 
