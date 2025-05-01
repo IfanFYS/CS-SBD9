@@ -18,6 +18,7 @@ function Login() {
     try {
       // Log request details for debugging
       console.log('Login attempt with email:', email);
+      console.log('Using backend URL:', backendUrl);
       
       const response = await axios.post(`${backendUrl}/user/login`, {
         email: email.trim(), // Ensure email is trimmed
@@ -156,4 +157,3 @@ export default Login;
 // @keyframes fadeInUp {
 //   from { opacity: 0; transform: translateY(20px); }
 //   to { opacity: 1; transform: translateY(0); }
-// }
